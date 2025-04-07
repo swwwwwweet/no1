@@ -1,7 +1,7 @@
 const CACHE_NAME = 'xiyitian-v1';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
+  '/no1/',
+  '/no1/index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
