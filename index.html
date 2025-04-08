@@ -18,6 +18,11 @@
 <title>希的一天 - 抽卡任务管理</title>
 <style>
 body{margin:0;padding:0;background-color:#F3F3FF;font-family:sans-serif}
+
+.scrollableHack {
+  min-width: 1200px; 
+  min-height: 2000px;
+}
 .container{max-width:400px;margin:0 auto;padding:10px}
 #resultContainer{background-color:#03755E;min-height:50px;padding:10px;border-radius:5px}
 .resultItem{background-color:#E4F4B0;margin:5px 0;padding:8px;border-radius:3px;display:flex;justify-content:space-between;align-items:center}
@@ -50,119 +55,237 @@ body{margin:0;padding:0;background-color:#F3F3FF;font-family:sans-serif}
 </style>
 </head>
 <body>
-<div class="container">
-<div id="resultContainer"></div>
-<div class="buttonRow">
-<button id="drawOne">抽取一次🐾</button>
-<button id="drawTen">抽取十次🐾</button>
-</div>
-<button id="editToggle">编辑内容</button>
-<div id="editArea" style="display:none;">
-<button id="saveContent">保存</button>
-<input type="text" id="taskInput" placeholder="请输入任务内容"/>
-<br>
-<label><input type="radio" name="catSelect" id="studyRadio" value="study"> 学习工作</label>
-<label><input type="radio" name="catSelect" id="homeRadio" value="home"> 家务运动</label>
-</div>
-<button id="viewToggle">查看内容</button>
-<div id="viewArea" style="display:none;">
-<h4>学习或工作项目类</h4>
-<ul id="listStudy"></ul>
-<h4>家务或运动项目类</h4>
-<ul id="listHome"></ul>
-</div>
-<button id="startTimerBtn" disabled>开始计时</button>
-<section id="chartSection">
-<canvas id="pieChart" width="300" height="300"></canvas>
-<div class="chart-controls">
-<button id="clearData">清空圆饼数据</button>
-<button id="toggleDetails">查看详情</button>
-</div>
-<div id="detailsSection"></div>
-</section>
-
-<img id="bottomImg" src="512x512-1.png"/>
+<!-- 用scrollableHack包裹原有.container，以制造足够宽高 -->
+<div class="scrollableHack">
+  <div class="container">
+    <div id="resultContainer"></div>
+    <div class="buttonRow">
+      <button id="drawOne">抽取一次🐾</button>
+      <button id="drawTen">抽取十次🐾</button>
+    </div>
+    <button id="editToggle">编辑内容</button>
+    <div id="editArea" style="display:none;">
+      <button id="saveContent">保存</button>
+      <input type="text" id="taskInput" placeholder="请输入任务内容"/>
+      <br>
+      <label><input type="radio" name="catSelect" id="studyRadio" value="study"> 学习工作</label>
+      <label><input type="radio" name="catSelect" id="homeRadio" value="home"> 家务运动</label>
+    </div>
+    <button id="viewToggle">查看内容</button>
+    <div id="viewArea" style="display:none;">
+      <h4>学习或工作项目类</h4>
+      <ul id="listStudy"></ul>
+      <h4>家务或运动项目类</h4>
+      <ul id="listHome"></ul>
+    </div>
+    <button id="startTimerBtn" disabled>开始计时</button>
+    <section id="chartSection">
+      <canvas id="pieChart" width="300" height="300"></canvas>
+      <div class="chart-controls">
+        <button id="clearData">清空圆饼数据</button>
+        <button id="toggleDetails">查看详情</button>
+      </div>
+      <div id="detailsSection"></div>
+    </section>
+    <img id="bottomImg" src="512x512-1.png"/>
+  </div>
 </div>
 <script>
 let tasksStudy=[],tasksHome=[]
 if(localStorage.getItem("tasksStudy")){tasksStudy=JSON.parse(localStorage.getItem("tasksStudy"))}
 if(localStorage.getItem("tasksHome")){tasksHome=JSON.parse(localStorage.getItem("tasksHome"))}
-const resultContainer=document.getElementById("resultContainer"),drawOneBtn=document.getElementById("drawOne"),drawTenBtn=document.getElementById("drawTen"),editToggleBtn=document.getElementById("editToggle"),editArea=document.getElementById("editArea"),saveContentBtn=document.getElementById("saveContent"),taskInput=document.getElementById("taskInput"),studyRadio=document.getElementById("studyRadio"),homeRadio=document.getElementById("homeRadio"),viewToggleBtn=document.getElementById("viewToggle"),viewArea=document.getElementById("viewArea"),listStudy=document.getElementById("listStudy"),listHome=document.getElementById("listHome"),startTimerBtn=document.getElementById("startTimerBtn"),bottomImg=document.getElementById("bottomImg")
-const entertainmentList=["人，可以刷二十分钟视频","吃点零食怎么样？推荐冰可乐","或许是时候奖励自己打一把游戏了，记得劳逸结合"],relaxationList=["奖励自己吃一顿大餐是不错的选择","今天剩下的时间用作休息好了，你已经很努力了"]
-editToggleBtn.addEventListener("click",()=>{if(editArea.style.display==="none"){editArea.style.display="block";viewArea.style.display="none"}else{editArea.style.display="none"}})
-viewToggleBtn.addEventListener("click",()=>{if(viewArea.style.display==="none"){buildContentList();viewArea.style.display="block";editArea.style.display="none"}else{viewArea.style.display="none"}})
-saveContentBtn.addEventListener("click",()=>{const e=taskInput.value.trim(),t=studyRadio.checked,n=homeRadio.checked
-if(!e){alert("请输入要保存的任务内容");return}
-if(!t&&!n){alert("请选择任务类别（学习工作或家务运动）");return}
-if(t){tasksStudy.push(e);localStorage.setItem("tasksStudy",JSON.stringify(tasksStudy))}else if(n){tasksHome.push(e);localStorage.setItem("tasksHome",JSON.stringify(tasksHome))}
-taskInput.value="";studyRadio.checked=false;homeRadio.checked=false})
-function buildContentList(){listStudy.innerHTML="";listHome.innerHTML=""
-tasksStudy.forEach((e,t)=>{const n=document.createElement("li"),i=document.createElement("span");i.textContent=e
-const r=document.createElement("button");r.textContent="删除";r.className="deleteBtn";r.addEventListener("click",()=>{tasksStudy.splice(t,1);localStorage.setItem("tasksStudy",JSON.stringify(tasksStudy));buildContentList()})
-n.appendChild(i);n.appendChild(r);listStudy.appendChild(n)})
-tasksHome.forEach((e,t)=>{const n=document.createElement("li"),i=document.createElement("span");i.textContent=e
-const r=document.createElement("button");r.textContent="删除";r.className="deleteBtn";r.addEventListener("click",()=>{tasksHome.splice(t,1);localStorage.setItem("tasksHome",JSON.stringify(tasksHome));buildContentList()})
-n.appendChild(i);n.appendChild(r);listHome.appendChild(n)})}
-function getRandomTask(){
-  const e=Math.floor(Math.random()*1e3)
-  let t
-  if(e<499){t="study"}
-  else if(e<666){t="entertainment"}
-  else if(e<833){t="home"}
-  else{t="relaxation"}
-  let n=""
-  if(t==="study"){n=tasksStudy.length===0?"无":tasksStudy[Math.floor(Math.random()*tasksStudy.length)]}
-  else if(t==="home"){n=tasksHome.length===0?"无":tasksHome[Math.floor(Math.random()*tasksHome.length)]}
-  else if(t==="entertainment"){n=entertainmentList[Math.floor(Math.random()*entertainmentList.length)]}
-  else{n=relaxationList[Math.floor(Math.random()*relaxationList.length)]}
-  return{text:n,cat:t}
+const resultContainer=document.getElementById("resultContainer"),
+      drawOneBtn=document.getElementById("drawOne"),
+      drawTenBtn=document.getElementById("drawTen"),
+      editToggleBtn=document.getElementById("editToggle"),
+      editArea=document.getElementById("editArea"),
+      saveContentBtn=document.getElementById("saveContent"),
+      taskInput=document.getElementById("taskInput"),
+      studyRadio=document.getElementById("studyRadio"),
+      homeRadio=document.getElementById("homeRadio"),
+      viewToggleBtn=document.getElementById("viewToggle"),
+      viewArea=document.getElementById("viewArea"),
+      listStudy=document.getElementById("listStudy"),
+      listHome=document.getElementById("listHome"),
+      startTimerBtn=document.getElementById("startTimerBtn"),
+      bottomImg=document.getElementById("bottomImg")
+
+const entertainmentList=[
+  "人，可以刷二十分钟视频",
+  "吃点零食怎么样？推荐冰可乐",
+  "或许是时候奖励自己打一把游戏了，记得劳逸结合"
+],
+relaxationList=[
+  "奖励自己吃一顿大餐是不错的选择",
+  "今天剩下的时间用作休息好了，你已经很努力了"
+]
+
+editToggleBtn.addEventListener("click",()=>{
+  if(editArea.style.display==="none"){
+    editArea.style.display="block"
+    viewArea.style.display="none"
+  } else {
+    editArea.style.display="none"
+  }
+})
+
+viewToggleBtn.addEventListener("click",()=>{
+  if(viewArea.style.display==="none"){
+    buildContentList()
+    viewArea.style.display="block"
+    editArea.style.display="none"
+  } else {
+    viewArea.style.display="none"
+  }
+})
+
+saveContentBtn.addEventListener("click",()=>{
+  const text=taskInput.value.trim(),
+        isStudy=studyRadio.checked,
+        isHome=homeRadio.checked
+  if(!text){
+    alert("请输入要保存的任务内容")
+    return
+  }
+  if(!isStudy&&!isHome){
+    alert("请选择任务类别（学习工作或家务运动）")
+    return
+  }
+  if(isStudy){
+    tasksStudy.push(text)
+    localStorage.setItem("tasksStudy",JSON.stringify(tasksStudy))
+  } else if(isHome){
+    tasksHome.push(text)
+    localStorage.setItem("tasksHome",JSON.stringify(tasksHome))
+  }
+  taskInput.value=""
+  studyRadio.checked=false
+  homeRadio.checked=false
+})
+
+function buildContentList(){
+  listStudy.innerHTML=""
+  listHome.innerHTML=""
+  tasksStudy.forEach((item,idx)=>{
+    const li=document.createElement("li"),
+          span=document.createElement("span")
+    span.textContent=item
+    const delBtn=document.createElement("button")
+    delBtn.textContent="删除"
+    delBtn.className="deleteBtn"
+    delBtn.addEventListener("click",()=>{
+      tasksStudy.splice(idx,1)
+      localStorage.setItem("tasksStudy",JSON.stringify(tasksStudy))
+      buildContentList()
+    })
+    li.appendChild(span)
+    li.appendChild(delBtn)
+    listStudy.appendChild(li)
+  })
+  tasksHome.forEach((item,idx)=>{
+    const li=document.createElement("li"),
+          span=document.createElement("span")
+    span.textContent=item
+    const delBtn=document.createElement("button")
+    delBtn.textContent="删除"
+    delBtn.className="deleteBtn"
+    delBtn.addEventListener("click",()=>{
+      tasksHome.splice(idx,1)
+      localStorage.setItem("tasksHome",JSON.stringify(tasksHome))
+      buildContentList()
+    })
+    li.appendChild(span)
+    li.appendChild(delBtn)
+    listHome.appendChild(li)
+  })
 }
+
+function getRandomTask(){
+  const n=Math.floor(Math.random()*1000)
+  let category
+  if(n<499){
+    category="study"
+  } else if(n<666){
+    category="entertainment"
+  } else if(n<833){
+    category="home"
+  } else {
+    category="relaxation"
+  }
+  let result=""
+  if(category==="study"){
+    result=(tasksStudy.length===0)?"无":tasksStudy[Math.floor(Math.random()*tasksStudy.length)]
+  } else if(category==="home"){
+    result=(tasksHome.length===0)?"无":tasksHome[Math.floor(Math.random()*tasksHome.length)]
+  } else if(category==="entertainment"){
+    result=entertainmentList[Math.floor(Math.random()*entertainmentList.length)]
+  } else {
+    result=relaxationList[Math.floor(Math.random()*relaxationList.length)]
+  }
+  return{text:result,cat:category}
+}
+
 let completedRecords=JSON.parse(localStorage.getItem("completedRecords")||"[]"),
-    colorMap={study:"#03755E",home:"#A4E0B8",entertainment:"#F3F3FF",relaxation:"#E4F4B0"},
-    lastCompleteTime=0,inTiming=false
+    colorMap={
+      study:"#03755E",
+      home:"#A4E0B8",
+      entertainment:"#F3F3FF",
+      relaxation:"#E4F4B0"
+    },
+    lastCompleteTime=0,
+    inTiming=false
 
 function updateTimerButtonState(){
   startTimerBtn.disabled=(resultContainer.children.length===0)
 }
 
 function drawPieChart(){
-  const e=document.getElementById("pieChart"),
-        t=e.getContext("2d")
-  t.clearRect(0,0,e.width,e.height)
+  const canvas=document.getElementById("pieChart"),
+        ctx=canvas.getContext("2d")
+  ctx.clearRect(0,0,canvas.width,canvas.height)
   if(completedRecords.length===0)return
   bottomImg.src="512x512-2.png"
-  let n={study:0,home:0,entertainment:0,relaxation:0}
-  for(let i of completedRecords)n[i.cat]+=i.duration
-  let r=n.study+n.home+n.entertainment+n.relaxation
-  if(r===0)return
-  let a=-Math.PI/2
-  ;["study","home","entertainment","relaxation"].forEach(i=>{
-    if(n[i]<=0)return
-    let o=(n[i]/r)*2*Math.PI
-    t.beginPath()
-    let s=e.width/2,c=e.height/2,l=Math.min(s,c)-2
-    t.moveTo(s,c)
-    t.arc(s,c,l,a,a+o)
-    t.closePath()
-    t.fillStyle=colorMap[i]||"#ccc"
-    t.fill()
-    t.strokeStyle="#fff"
-    t.lineWidth=2
-    t.stroke()
-    a+=o
+  let timeMap={study:0,home:0,entertainment:0,relaxation:0}
+  for(let rec of completedRecords){
+    timeMap[rec.cat]+=rec.duration
+  }
+  let totalTime=timeMap.study+timeMap.home+timeMap.entertainment+timeMap.relaxation
+  if(totalTime===0)return
+  let startAngle=-Math.PI/2
+  ;["study","home","entertainment","relaxation"].forEach(cat=>{
+    if(timeMap[cat]<=0)return
+    const sliceAngle=(timeMap[cat]/totalTime)*2*Math.PI
+    ctx.beginPath()
+    const cx=canvas.width/2,
+          cy=canvas.height/2,
+          radius=Math.min(cx,cy)-2
+    ctx.moveTo(cx,cy)
+    ctx.arc(cx,cy,radius,startAngle,startAngle+sliceAngle)
+    ctx.closePath()
+    ctx.fillStyle=colorMap[cat]||"#ccc"
+    ctx.fill()
+    ctx.strokeStyle="#fff"
+    ctx.lineWidth=2
+    ctx.stroke()
+    startAngle+=sliceAngle
   })
 }
 
 function updateDetailsSection(){
-  const e=document.getElementById("detailsSection")
-  if(completedRecords.length===0){e.innerHTML="";return}
-  let t="<ul>"
-  for(let n of completedRecords)t+="<li>"+n.name+" - "+n.duration+"秒</li>"
-  t+="</ul>"
-  let n=completedRecords.length,
-      i=completedRecords.reduce((r,a)=>r+a.duration,0)
-  t+="<p>共完成 "+n+" 个任务，总耗时 "+i+" 秒。</p>"
-  e.innerHTML=t
+  const detailsEl=document.getElementById("detailsSection")
+  if(completedRecords.length===0){
+    detailsEl.innerHTML=""
+    return
+  }
+  let html="<ul>"
+  for(let rec of completedRecords){
+    html+="<li>"+rec.name+" - "+rec.duration+"秒</li>"
+  }
+  html+="</ul>"
+  const totalTasks=completedRecords.length,
+        totalTime=completedRecords.reduce((sum,rc)=>sum+rc.duration,0)
+  html+="<p>共完成 "+totalTasks+" 个任务，总耗时 "+totalTime+" 秒。</p>"
+  detailsEl.innerHTML=html
 }
 
 if(completedRecords.length>0){
@@ -170,26 +293,27 @@ if(completedRecords.length>0){
   drawPieChart()
 }
 
-function addResultItem(e){
-  const t=document.createElement("div")
-  t.className="resultItem"
-  const n=document.createElement("span")
-  n.className="resultText"
-  n.textContent=e.text
-  const i=document.createElement("button")
-  i.className="completeBtn"
-  i.textContent="完成"
-  i.addEventListener("click",()=>{
+function addResultItem(obj){
+  const itemDiv=document.createElement("div")
+  itemDiv.className="resultItem"
+  const span=document.createElement("span")
+  span.className="resultText"
+  span.textContent=obj.text
+  const completeButton=document.createElement("button")
+  completeButton.className="completeBtn"
+  completeButton.textContent="完成"
+
+  completeButton.addEventListener("click",()=>{
     if(!inTiming){
       alert("请先点击开始计时")
       return
     }
-    resultContainer.removeChild(t)
-    let r=Date.now(),
-        a=Math.round((r-(lastCompleteTime||r))/1e3)
+    resultContainer.removeChild(itemDiv)
+    const now=Date.now()
+    const durationSec=Math.round((now-(lastCompleteTime||now))/1000)
     lastCompleteTime=0
     inTiming=false
-    completedRecords.push({name:e.text,cat:e.cat,duration:a})
+    completedRecords.push({name:obj.text,cat:obj.cat,duration:durationSec})
     localStorage.setItem("completedRecords",JSON.stringify(completedRecords))
     if(completedRecords.length===1){
       document.getElementById("chartSection").style.display="block"
@@ -205,9 +329,10 @@ function addResultItem(e){
     }
     updateTimerButtonState()
   })
-  t.appendChild(n)
-  t.appendChild(i)
-  resultContainer.appendChild(t)
+
+  itemDiv.appendChild(span)
+  itemDiv.appendChild(completeButton)
+  resultContainer.appendChild(itemDiv)
   updateTimerButtonState()
 }
 
@@ -216,8 +341,8 @@ function drawOne(){
     alert("当前有未完成任务，请完成后再抽卡")
     return
   }
-  const e=getRandomTask()
-  addResultItem(e)
+  const taskObj=getRandomTask()
+  addResultItem(taskObj)
   if(resultContainer.children.length>0){
     drawOneBtn.disabled=true
     drawTenBtn.disabled=true
@@ -229,9 +354,9 @@ function drawTen(){
     alert("当前有未完成任务，请完成后再抽卡")
     return
   }
-  for(let e=0;e<10;e++){
-    const t=getRandomTask()
-    addResultItem(t)
+  for(let i=0;i<10;i++){
+    const taskObj=getRandomTask()
+    addResultItem(taskObj)
   }
   if(resultContainer.children.length>0){
     drawOneBtn.disabled=true
@@ -255,13 +380,13 @@ document.getElementById("clearData").addEventListener("click",()=>{
 })
 
 document.getElementById("toggleDetails").addEventListener("click",()=>{
-  const e=document.getElementById("detailsSection")
-  if(e.style.display==="none"){
+  const detailsEl=document.getElementById("detailsSection")
+  if(detailsEl.style.display==="none"){
     updateDetailsSection()
-    e.style.display="block"
+    detailsEl.style.display="block"
     document.getElementById("toggleDetails").textContent="收起详情"
   } else {
-    e.style.display="none"
+    detailsEl.style.display="none"
     document.getElementById("toggleDetails").textContent="查看详情"
   }
 })
